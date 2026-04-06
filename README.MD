@@ -1,11 +1,11 @@
 # Computación II - 2026
 
-## Datos del estudiante
+## Datos
 
-- **Nombre:** [Tu nombre completo]
-- **Legajo:** [Tu legajo]
-- **Email:** [Tu email]
-- **GitHub:** [@tu-usuario](https://github.com/tu-usuario)
+-Nombre: Agustin Vera
+-Legajo: 61221
+-Email: agn.vera@alumno.um.edu.ar
+-Github: Veraagustin0328
 
 ## Estructura
 
