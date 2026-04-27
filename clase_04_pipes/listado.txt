@@ -1,0 +1,18 @@
+total 64
+drwxr-xr-x  2 veraagustin veraagustin 4096 Apr 27 12:22 .
+drwxr-xr-x 13 veraagustin veraagustin 4096 Apr 27 12:06 ..
+-rw-r--r--  1 veraagustin veraagustin  942 Apr 27 12:10 explorar_fds.py
+-rw-r--r--  1 veraagustin veraagustin    0 Apr 27 12:22 listado.txt
+-rw-r--r--  1 veraagustin veraagustin 2378 Apr 27 12:20 minishell.py
+-rw-r--r--  1 veraagustin veraagustin  806 Apr 27 12:13 pipe_basico.py
+-rw-r--r--  1 veraagustin veraagustin  995 Apr 27 12:14 pipe_bidireccional.py
+-rw-r--r--  1 veraagustin veraagustin  786 Apr 27 12:17 pipeline_dos.py
+-rw-r--r--  1 veraagustin veraagustin 1386 Apr 27 12:20 pipeline_tres.py
+-rw-r--r--  1 veraagustin veraagustin  682 Apr 27 12:11 redireccion.py
+-rw-r--r--  1 veraagustin veraagustin  383 Apr 27 12:12 separar_salidas.py
+-rw-r--r--  1 veraagustin veraagustin   68 Apr 27 12:12 solo_stderr.txt
+-rw-r--r--  1 veraagustin veraagustin   73 Apr 27 12:12 solo_stdout.txt
+-rw-r--r--  1 veraagustin veraagustin   68 Apr 27 12:12 stderr.txt
+-rw-r--r--  1 veraagustin veraagustin   73 Apr 27 12:12 stdout.txt
+-rw-r--r--  1 veraagustin veraagustin   13 Apr 27 12:22 test.txt
+-rw-r--r--  1 veraagustin veraagustin  141 Apr 27 12:12 todo.txt
