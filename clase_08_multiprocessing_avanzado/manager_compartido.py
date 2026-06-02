@@ -1,0 +1,35 @@
+from multiprocessing import Process, Manager
+import time
+import random
+
+def worker(shared_dict, shared_list, id):
+    duracion = random.uniform(0.2, 1.0)
+    time.sleep(duracion)
+
+    shared_dict[f"worker_{id}"] = {
+        "status": "done",
+        "result": id ** 2,
+        "duracion": round(duracion, 2)
+    }
+
+    shared_list.append(f"Worker {id} completo en {duracion:.2f}s")
+
+if __name__ == "__main__":
+    with Manager() as manager:
+        d = manager.dict()
+        l = manager.list()
+
+        procs = [Process(target=worker, args=(d, l, i)) for i in range(5)]
+
+        for p in procs:
+            p.start()
+        for p in procs:
+            p.join()
+
+        print("Diccionario compartido:")
+        for k, v in d.items():
+            print(f"  {k}: {v}")
+
+        print("\nLista compartida (orden de finalizacion):")
+        for item in l:
+            print(f"  {item}")
