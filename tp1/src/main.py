@@ -122,17 +122,20 @@ def main():
         print("\n[Main] Sistema corriendo. Ctrl+C para salir.\n")
 
         try:
-            # loop principal - por ahora solo muestra el snapshot cada 5s
-            while True:
-                time.sleep(5)
-                if "sistema" in snapshot and snapshot["sistema"]["timestamp"] > 0:
-                    datos = snapshot["sistema"]["datos"]
-                    mem = datos.get("memoria", {})
-                    cpu = datos.get("cpu", {})
-                    procs = datos.get("procesos", {})
-                    print(f"[Main] CPU: {cpu.get('total_pct', 0)}% | RAM: {mem.get('usado_kb', 0)//1024}MB | Procesos: {procs.get('total', 0)}")
+            # esperar un poco a que los analizadores tengan datos
+            print("[Main] Esperando datos iniciales...")
+            time.sleep(3)
 
+            print("[Main] Arrancando TUI...", flush=True)
+            time.sleep(1)
+            print("[Main] Importando display...", flush=True)
+            from display import iniciar_display
+            print("[Main] Llamando iniciar_display...", flush=True)
+            iniciar_display(snapshot, intervalos)
+            print("[Main] Display terminado", flush=True)
         except KeyboardInterrupt:
+            pass
+        finally:
             shutdown(procesos_analizadores, proceso_recolector)
 
 if __name__ == "__main__":
