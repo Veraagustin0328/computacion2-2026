@@ -1,10 +1,8 @@
 import multiprocessing
-import signal
 import time
 import sys
 import os
 
-# agrego src al path para los imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from recolector import recolector
@@ -17,19 +15,17 @@ from analizadores.scheduling import analizador_scheduling
 from analizadores.sistema import analizador_sistema
 
 def crear_snapshot_inicial(manager):
-    """Crea el snapshot compartido con valores iniciales."""
     snapshot = manager.dict()
-    snapshot["resumen"] = {"datos": {}, "timestamp": 0}
-    snapshot["memoria"] = {"datos": {}, "timestamp": 0}
-    snapshot["fds"] = {"datos": {}, "timestamp": 0}
-    snapshot["threads"] = {"datos": {}, "timestamp": 0}
-    snapshot["senales"] = {"datos": {}, "timestamp": 0}
+    snapshot["resumen"]    = {"datos": {}, "timestamp": 0}
+    snapshot["memoria"]    = {"datos": {}, "timestamp": 0}
+    snapshot["fds"]        = {"datos": {}, "timestamp": 0}
+    snapshot["threads"]    = {"datos": {}, "timestamp": 0}
+    snapshot["senales"]    = {"datos": {}, "timestamp": 0}
     snapshot["scheduling"] = {"datos": {}, "timestamp": 0}
-    snapshot["sistema"] = {"datos": {}, "timestamp": 0}
+    snapshot["sistema"]    = {"datos": {}, "timestamp": 0}
     return snapshot
 
 def crear_intervalos(manager):
-    """Crea los valores compartidos para los intervalos de cada analizador."""
     return {
         "resumen":    multiprocessing.Value('d', 2.0),
         "memoria":    multiprocessing.Value('d', 3.0),
@@ -41,7 +37,6 @@ def crear_intervalos(manager):
     }
 
 def crear_queues():
-    """Crea una cola por cada analizador."""
     return {
         "resumen":    multiprocessing.Queue(maxsize=2),
         "memoria":    multiprocessing.Queue(maxsize=2),
@@ -53,9 +48,7 @@ def crear_queues():
     }
 
 def iniciar_analizadores(queues, snapshot, intervalos):
-    """Arranca los 7 analizadores como procesos independientes."""
     procesos = []
-
     configs = [
         ("resumen",    analizador_resumen,    (queues["resumen"],    snapshot, intervalos["resumen"])),
         ("memoria",    analizador_memoria,    (queues["memoria"],    snapshot, intervalos["memoria"])),
@@ -65,7 +58,6 @@ def iniciar_analizadores(queues, snapshot, intervalos):
         ("scheduling", analizador_scheduling, (queues["scheduling"], snapshot, intervalos["scheduling"])),
         ("sistema",    analizador_sistema,    (queues["sistema"],    snapshot, intervalos["sistema"])),
     ]
-
     for nombre, funcion, args in configs:
         p = multiprocessing.Process(
             target=funcion,
@@ -76,23 +68,17 @@ def iniciar_analizadores(queues, snapshot, intervalos):
         p.start()
         procesos.append(p)
         print(f"[Main] Analizador '{nombre}' iniciado (PID {p.pid})")
-
     return procesos
 
 def shutdown(procesos_analizadores, proceso_recolector):
-    """Termina todos los procesos limpiamente."""
     print("\n[Main] Iniciando shutdown...")
-
     for p in procesos_analizadores:
         if p.is_alive():
             p.terminate()
-
     if proceso_recolector.is_alive():
         proceso_recolector.terminate()
-
     for p in procesos_analizadores:
         p.join(timeout=3)
-
     proceso_recolector.join(timeout=3)
     print("[Main] Todos los procesos terminados")
 
@@ -101,15 +87,12 @@ def main():
     print(f"[Main] PID principal: {os.getpid()}")
 
     with multiprocessing.Manager() as manager:
-        # crear estructuras compartidas
         snapshot = crear_snapshot_inicial(manager)
         intervalos = crear_intervalos(manager)
         queues = crear_queues()
 
-        # arrancar analizadores
         procesos_analizadores = iniciar_analizadores(queues, snapshot, intervalos)
 
-        # arrancar recolector
         proceso_recolector = multiprocessing.Process(
             target=recolector,
             args=(queues, 2),
@@ -119,20 +102,17 @@ def main():
         proceso_recolector.start()
         print(f"[Main] Recolector iniciado (PID {proceso_recolector.pid})")
 
-        print("\n[Main] Sistema corriendo. Ctrl+C para salir.\n")
+        # registrar handlers de señales del monitor
+        from senales import setup_señales
+        setup_señales(snapshot, intervalos)
 
         try:
-            # esperar un poco a que los analizadores tengan datos
             print("[Main] Esperando datos iniciales...")
             time.sleep(3)
 
-            print("[Main] Arrancando TUI...", flush=True)
-            time.sleep(1)
-            print("[Main] Importando display...", flush=True)
             from display import iniciar_display
-            print("[Main] Llamando iniciar_display...", flush=True)
             iniciar_display(snapshot, intervalos)
-            print("[Main] Display terminado", flush=True)
+
         except KeyboardInterrupt:
             pass
         finally:

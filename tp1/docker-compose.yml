@@ -1,0 +1,10 @@
+services:
+  monitor:
+    build: .
+    container_name: monitor-procesos
+    tty: true
+    stdin_open: true
+    pid: host
+    volumes:
+      - /proc:/proc:ro
+    privileged: true
