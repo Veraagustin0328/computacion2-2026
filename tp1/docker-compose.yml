@@ -2,9 +2,11 @@ services:
   monitor:
     build: .
     container_name: monitor-procesos
-    tty: true
     stdin_open: true
+    tty: true
     pid: host
     volumes:
       - /proc:/proc:ro
     privileged: true
+    network_mode: host
+    command: python3 src/main.py

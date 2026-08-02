@@ -1,7 +1,3 @@
-# display.py - interfaz de usuario TUI usando rich
-# muestra los datos del snapshot en pantalla con 7 vistas alternables
-# Agustin Vera - Computacion II 2026
-
 import time
 import os
 import sys
@@ -298,7 +294,11 @@ def leer_teclado(display):
     import tty
     import termios
     fd = sys.stdin.fileno()
-    old = termios.tcgetattr(fd)
+    try:
+        old = termios.tcgetattr(fd)
+    except termios.error:
+        print("[Display] No hay terminal interactiva, navegacion deshabilitada")
+        return
     try:
         tty.setraw(fd)
         while display.ejecutando:
