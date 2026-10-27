@@ -1,25 +1,39 @@
 import asyncio
 from datetime import datetime
-from cola import cola, tareas, Estado
+from cola import Estado
+import cola as estado
+from tareas import esperar, hashear, descargar
+
+TAREAS = {
+    "esperar":   esperar.ejecutar,
+    "hashear":   hashear.ejecutar,
+    "descargar": descargar.ejecutar,
+}
 
 async def ejecutar_tarea(tarea):
-    # por ahora simula ejecucion, la logica real va en semana 2
     tarea.estado = Estado.ejecutando
     tarea.iniciada_en = datetime.now().isoformat()
 
-    await asyncio.sleep(2)  # simulacion
+    funcion = TAREAS.get(tarea.tipo)
+    if not funcion:
+        raise ValueError(f"tipo de tarea desconocido: {tarea.tipo}")
 
+    resultado = await funcion(tarea.parametros)
+    tarea.resultado = resultado
     tarea.estado = Estado.completada
-    tarea.resultado = {"mensaje": f"tarea {tarea.tipo} completada (simulado)"}
     tarea.terminada_en = datetime.now().isoformat()
 
 async def worker(worker_id):
     print(f"[Worker {worker_id}] Iniciando")
     while True:
-        tarea = await cola.get()
+        # espera hasta que la cola este inicializada
+        while estado.cola is None:
+            await asyncio.sleep(0.1)
+
+        tarea = await estado.cola.get()
 
         if tarea.estado == Estado.cancelada:
-            cola.task_done()
+            estado.cola.task_done()
             continue
 
         print(f"[Worker {worker_id}] Ejecutando tarea {tarea.id} ({tarea.tipo})")
@@ -32,14 +46,14 @@ async def worker(worker_id):
             tarea.terminada_en = datetime.now().isoformat()
         except asyncio.TimeoutError:
             tarea.estado = Estado.fallida
-            tarea.error = "timeout"
+            tarea.error = f"timeout despues de {tarea.timeout}s"
             tarea.terminada_en = datetime.now().isoformat()
         except Exception as e:
             tarea.estado = Estado.fallida
             tarea.error = str(e)
             tarea.terminada_en = datetime.now().isoformat()
 
-        cola.task_done()
+        estado.cola.task_done()
 
 async def iniciar_workers(n=4):
     workers = [asyncio.create_task(worker(i)) for i in range(n)]

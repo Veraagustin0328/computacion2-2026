@@ -1,39 +1,49 @@
+
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from cola import cola, tareas, Tarea, Estado, inicializar_cola
+from contextlib import asynccontextmanager
+import asyncio
+import cola as estado
+from cola import Tarea, Estado
+from workers import iniciar_workers
 
-app = FastAPI(title="Plataforma de Tareas Distribuidas")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # inicializar cola y workers al arrancar
+    estado.cola = asyncio.Queue()
+    await iniciar_workers(n=4)
+    print("[API] Cola y workers iniciados")
+    yield
+    print("[API] Apagando...")
 
-# modelos de entrada
+app = FastAPI(title="Plataforma de Tareas Distribuidas", lifespan=lifespan)
+
 class TareaInput(BaseModel):
-    tipo: str           # "descargar", "hashear", "esperar"
+    tipo: str
     parametros: dict
     timeout: Optional[int] = 60
-
-@app.on_event("startup")
-async def startup():
-    inicializar_cola()
 
 @app.post("/tareas", status_code=202)
 async def crear_tarea(body: TareaInput):
     tarea = Tarea(body.tipo, body.parametros, body.timeout)
-    tareas[tarea.id] = tarea
-    await cola.put(tarea)
+    estado.tareas[tarea.id] = tarea
+    await estado.cola.put(tarea)
     return {"id": tarea.id, "estado": tarea.estado}
 
 @app.get("/tareas")
-async def listar_tareas(estado: Optional[str] = None):
-    resultado = list(tareas.values())
-    if estado:
-        resultado = [t for t in resultado if t.estado == estado]
+async def listar_tareas(estado_filtro: Optional[str] = None):
+    resultado = list(estado.tareas.values())
+    if estado_filtro:
+        resultado = [t for t in resultado if t.estado == estado_filtro]
     return [{"id": t.id, "tipo": t.tipo, "estado": t.estado} for t in resultado]
 
 @app.get("/tareas/{tarea_id}")
 async def obtener_tarea(tarea_id: str):
-    if tarea_id not in tareas:
+    if tarea_id not in estado.tareas:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
-    t = tareas[tarea_id]
+    t = estado.tareas[tarea_id]
     return {
         "id": t.id,
         "tipo": t.tipo,
@@ -47,9 +57,9 @@ async def obtener_tarea(tarea_id: str):
 
 @app.delete("/tareas/{tarea_id}")
 async def cancelar_tarea(tarea_id: str):
-    if tarea_id not in tareas:
+    if tarea_id not in estado.tareas:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
-    t = tareas[tarea_id]
+    t = estado.tareas[tarea_id]
     if t.estado in [Estado.completada, Estado.fallida, Estado.cancelada]:
         raise HTTPException(status_code=400, detail=f"No se puede cancelar, estado: {t.estado}")
     t.estado = Estado.cancelada
@@ -60,6 +70,7 @@ async def cancelar_tarea(tarea_id: str):
 @app.get("/estadisticas")
 async def estadisticas():
     conteo = {e.value: 0 for e in Estado}
-    for t in tareas.values():
+    for t in estado.tareas.values():
         conteo[t.estado] += 1
-    return {"totales": conteo, "workers_ocupados": 0}
+    workers_ocupados = sum(1 for t in estado.tareas.values() if t.estado == Estado.ejecutando)
+    return {"totales": conteo, "workers_ocupados": workers_ocupados}
