@@ -2,13 +2,16 @@ import asyncio
 from datetime import datetime
 from cola import Estado
 import cola as estado
-from tareas import esperar, hashear, descargar
+from tareas import esperar, hashear, descargar, hashear_bloqueante
 
 TAREAS = {
     "esperar":   esperar.ejecutar,
     "hashear":   hashear.ejecutar,
     "descargar": descargar.ejecutar,
+    # solo para la medicion 2, no usar en produccion
+    "hashear_bloqueante": hashear_bloqueante.ejecutar,
 }
+
 
 async def ejecutar_tarea(tarea):
     tarea.estado = Estado.ejecutando
@@ -23,10 +26,10 @@ async def ejecutar_tarea(tarea):
     tarea.estado = Estado.completada
     tarea.terminada_en = datetime.now().isoformat()
 
+
 async def worker(worker_id):
     print(f"[Worker {worker_id}] Iniciando")
     while True:
-        # espera hasta que la cola este inicializada
         while estado.cola is None:
             await asyncio.sleep(0.1)
 
@@ -54,6 +57,7 @@ async def worker(worker_id):
             tarea.terminada_en = datetime.now().isoformat()
 
         estado.cola.task_done()
+
 
 async def iniciar_workers(n=4):
     workers = [asyncio.create_task(worker(i)) for i in range(n)]
