@@ -3,6 +3,6 @@ services:
     build: .
     container_name: tp2-tareas
     ports:
-            - "8001:8000"
+      - "8001:8000"
     volumes:
-      - ./src:/app/src
+      - ./datos:/app/datos
